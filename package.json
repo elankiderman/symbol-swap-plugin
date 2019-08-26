@@ -4,6 +4,10 @@
   "engines": {
     "sketch": ">=3.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elankiderman/symbol-swap-plugin.git"
+  },
   "skpm": {
     "name": "my-plugin",
     "manifest": "src/manifest.json",
