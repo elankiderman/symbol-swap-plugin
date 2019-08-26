@@ -42,6 +42,11 @@ window.loadDropdowns = (dropdownArray) => {
       option.value = dropdownArray[i][j];
       select.add(option)
     }
+
+    if(select.length == 1) {
+      select.disabled = true
+
+    }
     div.appendChild(select)
     container.appendChild(div)
   }

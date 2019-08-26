@@ -50,7 +50,7 @@ export default function () {
 
   // print a message when the page loads
   webContents.on('did-finish-load', () => {
-    UI.message('UI loaded!')
+    UI.message('UI loaded!!')
     webContents
       .executeJavaScript(`loadDropdowns(${JSON.stringify(dropdownArray)})`)
       .catch(console.error)
