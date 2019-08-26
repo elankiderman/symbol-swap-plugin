@@ -1,0 +1,33 @@
+{
+  "name": "Symbol swapper",
+  "description": "internal tool for qz",
+  "icon": "icon.png",
+  "compatibleVersion": 3,
+  "bundleVersion": 1,
+  "commands": [
+    {
+      "name": "Swap Symbol",
+      "shortcut": "control shift a",
+      "identifier": "qz-plugin.swap-identifier",
+      "description": "Swap symbol",
+      "script": "my-command.js",
+      "handlers": {
+        "run": "onRun",
+        "actions": {
+          "Shutdown": "onShutdown",
+          "SelectionChanged": "onSelectionChanged"
+        }
+      }
+    }
+  ],
+  "menu": {
+    "title": "Symbol Swapper",
+    "items": [
+      "qz-plugin.swap-identifier"
+    ]
+  },
+  "version": "2.0.0",
+  "identifier": "symbol-swap",
+  "disableCocoaScriptPreprocessor": true,
+  "appcast": "https://raw.githubusercontent.com/elankiderman/symbol-swap-plugin/master/.appcast.xml"
+}
