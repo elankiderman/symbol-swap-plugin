@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # my-plugin
 
 ## Installation
@@ -93,3 +94,6 @@ You will need to specify a `repository` in the `package.json`:
 +  }
 ...
 ```
+=======
+# symbol-swap-plugin
+>>>>>>> db56616e66bcc1b507577b35189233f54ebffc06
