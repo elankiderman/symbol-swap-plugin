@@ -1,5 +1,5 @@
 {
-  "name": "my-plugin",
+  "name": "symbol-swap",
   "version": "1.0.0",
   "engines": {
     "sketch": ">=3.0"
@@ -9,9 +9,9 @@
     "url": "https://github.com/elankiderman/symbol-swap-plugin.git"
   },
   "skpm": {
-    "name": "my-plugin",
+    "name": "symbol-swap",
     "manifest": "src/manifest.json",
-    "main": "my-plugin.sketchplugin",
+    "main": "symbol-swap.sketchplugin",
     "assets": [
       "assets/**/*"
     ],
