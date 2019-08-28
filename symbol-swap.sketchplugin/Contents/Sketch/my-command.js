@@ -2654,7 +2654,7 @@ var selectedLayers;
   var webContents = browserWindow.webContents; // print a message when the page loads
 
   webContents.on('did-finish-load', function () {
-    sketch_ui__WEBPACK_IMPORTED_MODULE_2___default.a.message('UI loaded!!');
+    sketch_ui__WEBPACK_IMPORTED_MODULE_2___default.a.message('UI loaded!!!!');
     webContents.executeJavaScript("loadDropdowns(".concat(JSON.stringify(dropdownArray), ")")).catch(console.error);
   }); //add a handler for a call from web content's javascript
 
@@ -2662,27 +2662,32 @@ var selectedLayers;
     //replace the symbol
     selectedLayers = doc.selectedLayers;
     var layer = selectedLayers.layers[0];
-    var master = layer.master;
+    var isSymbol = layer.type == 'SymbolInstance';
+    var master = getMasterFromLayer(layer);
     var originLibrary = master.getLibrary();
-    var symbolReferences;
+    var symbolReferences = getReferencesFromMaster(master);
+    var newSymbols = symbolReferences.filter(function (symbol) {
+      return symbol.name === symbolString;
+    });
 
     if (originLibrary) {
-      symbolReferences = originLibrary.getImportableSymbolReferencesForDocument(document);
-      var newSymbols = symbolReferences.filter(function (symbol) {
-        return symbol.name === symbolString;
-      });
       var newMaster = newSymbols[0].import();
     } else {
-      symbolReferences = document.getSymbols();
-      var newSymbols = symbolReferences.filter(function (symbol) {
-        return symbol.name === symbolString;
-      });
       var newMaster = newSymbols[0];
     }
 
-    layer.master = newMaster;
-    layer.frame.width = newMaster.frame.width;
-    layer.frame.height = newMaster.frame.height;
+    if (isSymbol) {
+      layer.master = newMaster;
+      layer.frame.width = newMaster.frame.width;
+      layer.frame.height = newMaster.frame.height;
+    } else {
+      layer.sharedStyle = newMaster;
+      layer.style.fontFamily = newMaster.style.fontFamily;
+      layer.style.fontWeight = newMaster.style.fontWeight;
+      layer.style.fontSize = newMaster.style.fontSize;
+      layer.style.lineHeight = newMaster.style.lineHeight;
+    }
+
     var newSelectedLayers = doc.selectedLayers;
     dropdownArray = iterateLayers(newSelectedLayers);
     webContents.executeJavaScript("loadDropdowns(".concat(JSON.stringify(dropdownArray), ")")).catch(console.error);
@@ -2695,10 +2700,8 @@ function iterateLayers(selectedLayers) {
   var dropdownArray;
   var layer = selectedLayers.layers[0];
 
-  if (layer.type == 'SymbolInstance') {
+  if (layer.type == 'SymbolInstance' || layer.type == 'Text') {
     dropdownArray = swapSymbol(layer);
-  } else if (layer.type == 'Text') {
-    swapText(layer);
   } else {
     sketch__WEBPACK_IMPORTED_MODULE_3___default.a.UI.message('not a symbol or text with style');
   }
@@ -2707,21 +2710,10 @@ function iterateLayers(selectedLayers) {
 }
 
 function swapSymbol(layer) {
-  var key = deviceKey;
-  var master = layer.master;
+  var master = getMasterFromLayer(layer);
   var name = master.name;
   var splitName = name.split('/');
-  var existingSymbolsArray = [];
-  var originLibrary = master.getLibrary(); //get all of the symbols from the library
-
-  var symbolReferences;
-
-  if (originLibrary) {
-    symbolReferences = originLibrary.getImportableSymbolReferencesForDocument(document);
-  } else {
-    symbolReferences = document.getSymbols();
-  }
-
+  var symbolReferences = getReferencesFromMaster(master);
   var relatedSymbols = [];
 
   for (var i = 0; i < symbolReferences.length; i++) {
@@ -2773,10 +2765,46 @@ function compare(arr1, arr2) {
   }
 }
 
+function getMasterFromLayer(layer) {
+  var isSymbol = layer.type == 'SymbolInstance';
+
+  if (isSymbol) {
+    var key = deviceKey;
+    var master = layer.master;
+  } else {
+    var styleId = layer.sharedStyleId;
+    var master = document.getSharedTextStyleWithID(styleId);
+  }
+
+  return master;
+}
+
+function getReferencesFromMaster(master) {
+  var isSymbol = master.type == 'SymbolMaster';
+  var existingSymbolsArray = [];
+  var originLibrary = master.getLibrary(); //get all of the symbols from the library
+
+  var symbolReferences;
+
+  if (isSymbol) {
+    if (originLibrary) {
+      symbolReferences = originLibrary.getImportableSymbolReferencesForDocument(document);
+    } else {
+      symbolReferences = document.getSymbols();
+    }
+  } else {
+    if (originLibrary) {
+      symbolReferences = originLibrary.getImportableTextStyleReferencesForDocument(document);
+    } else {
+      sketch__WEBPACK_IMPORTED_MODULE_3___default.a.UI.message('doesn\'t have a library text style');
+    }
+  }
+
+  return symbolReferences;
+}
+
 function onSelectionChanged() {
   if (Object(sketch_module_web_view_remote__WEBPACK_IMPORTED_MODULE_1__["isWebviewPresent"])(webviewIdentifier)) {
-    console.log("onSelectionChanged2");
-
     var _doc = sketch__WEBPACK_IMPORTED_MODULE_3___default.a.getSelectedDocument();
 
     selectedLayers = _doc.selectedLayers;
@@ -2789,15 +2817,12 @@ function onSelectionChanged() {
       showMessage('Please select a single layer');
     } else {
       dropdownArray = iterateLayers(selectedLayers);
-      console.log("dropdownArray");
-      console.log(dropdownArray);
       Object(sketch_module_web_view_remote__WEBPACK_IMPORTED_MODULE_1__["sendToWebview"])(webviewIdentifier, "loadDropdowns(".concat(JSON.stringify(dropdownArray), ")"));
     }
   }
 }
 function showMessage(message) {
   if (Object(sketch_module_web_view_remote__WEBPACK_IMPORTED_MODULE_1__["isWebviewPresent"])(webviewIdentifier)) {
-    console.log('webview present');
     Object(sketch_module_web_view_remote__WEBPACK_IMPORTED_MODULE_1__["sendToWebview"])(webviewIdentifier, "sendMessage(".concat(JSON.stringify(message), ")"));
   }
 } // When the plugin is shutdown by Sketch (for example when the user disable the plugin)

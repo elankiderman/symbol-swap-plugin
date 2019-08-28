@@ -36,10 +36,30 @@ window.loadDropdowns = (dropdownArray) => {
     var select = document.createElement("select");
     select.addEventListener("change",dropdownChanged)
 
-    for(var j = 0; j < dropdownArray[i].length; j++) {
+    var sortedOptions = dropdownArray[i].slice();
+
+    if(isNaN(sortedOptions[0])) {
+      sortedOptions.sort();
+    }
+    else {
+      sortedOptions.sort(function(a, b)
+        {
+            return a - b;
+        });
+    }
+
+
+    var selectedIndex = 0;
+    var selectedValue = dropdownArray[i][0]
+
+    for(var j = 0; j < sortedOptions.length; j++) {
       var option = document.createElement("option");
-      option.text = dropdownArray[i][j];
-      option.value = dropdownArray[i][j];
+      option.text = sortedOptions[j];
+      option.value = sortedOptions[j];
+      if(sortedOptions[j] == selectedValue) {
+        selectedIndex = j;
+      }
+
       select.add(option)
     }
 
@@ -47,8 +67,9 @@ window.loadDropdowns = (dropdownArray) => {
       select.disabled = true
 
     }
-    div.appendChild(select)
-    container.appendChild(div)
+    select.selectedIndex = selectedIndex;
+    div.appendChild(select);
+    container.appendChild(div);
   }
   document.body.appendChild(container)
 

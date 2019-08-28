@@ -50,7 +50,7 @@ export default function () {
 
   // print a message when the page loads
   webContents.on('did-finish-load', () => {
-    UI.message('UI loaded!!')
+    UI.message('UI loaded!!!!')
     webContents
       .executeJavaScript(`loadDropdowns(${JSON.stringify(dropdownArray)})`)
       .catch(console.error)
@@ -59,32 +59,46 @@ export default function () {
   //add a handler for a call from web content's javascript
   webContents.on('dropdownChanged', symbolString => {
     //replace the symbol
-
     selectedLayers = doc.selectedLayers;
 
     var layer = selectedLayers.layers[0]
-    var master = layer.master;
+
+    var isSymbol = (layer.type == 'SymbolInstance')
+
+    var master = getMasterFromLayer(layer);
     var originLibrary = master.getLibrary();
-    var symbolReferences;
+    var symbolReferences = getReferencesFromMaster(master);
+
+    var newSymbols = symbolReferences.filter(symbol => {
+      return symbol.name === symbolString;
+    })
+
+
+
+
+
     if(originLibrary) {
-      symbolReferences = originLibrary.getImportableSymbolReferencesForDocument(document);
-      var newSymbols = symbolReferences.filter(symbol => {
-        return symbol.name === symbolString;
-      })
       var newMaster = newSymbols[0].import();
     }
     else {
-      symbolReferences = document.getSymbols();
-      var newSymbols = symbolReferences.filter(symbol => {
-        return symbol.name === symbolString;
-      })
       var newMaster = newSymbols[0];
     }
 
-    layer.master = newMaster;
+    if(isSymbol) {
+      layer.master = newMaster;
 
-    layer.frame.width = newMaster.frame.width;
-    layer.frame.height = newMaster.frame.height;
+      layer.frame.width = newMaster.frame.width;
+      layer.frame.height = newMaster.frame.height;
+    }
+    else {
+      layer.sharedStyle = newMaster;
+      layer.style.fontFamily = newMaster.style.fontFamily;
+      layer.style.fontWeight = newMaster.style.fontWeight;
+      layer.style.fontSize = newMaster.style.fontSize;
+      layer.style.lineHeight = newMaster.style.lineHeight;
+    }
+
+
 
     var newSelectedLayers = doc.selectedLayers;
 
@@ -103,11 +117,8 @@ export default function () {
 function iterateLayers(selectedLayers) {
   var dropdownArray;
   var layer = selectedLayers.layers[0]
-  if (layer.type == 'SymbolInstance') {
+  if (layer.type == 'SymbolInstance' || layer.type == 'Text') {
     dropdownArray = swapSymbol(layer)
-  }
-  else if(layer.type == 'Text') {
-    swapText(layer);
   }
   else {
     sketch.UI.message('not a symbol or text with style')
@@ -118,26 +129,13 @@ function iterateLayers(selectedLayers) {
 }
 
 function swapSymbol(layer) {
+  var master = getMasterFromLayer(layer);
 
-  var key = deviceKey;
-
-  var master = layer.master;
   var name = master.name;
   var splitName = name.split('/')
 
-  var existingSymbolsArray = [];
+  var symbolReferences = getReferencesFromMaster(master);
 
-  var originLibrary = master.getLibrary();
-
-
-  //get all of the symbols from the library
-  var symbolReferences;
-  if(originLibrary) {
-    symbolReferences = originLibrary.getImportableSymbolReferencesForDocument(document);
-  }
-  else {
-    symbolReferences = document.getSymbols();
-  }
 
   var relatedSymbols = [];
   for(var i = 0; i < symbolReferences.length; i++) {
@@ -160,6 +158,7 @@ function swapSymbol(layer) {
     var name = relatedSymbol[1]
     dropdownArray[index].push(name)
   }
+
 
   return dropdownArray;
 }
@@ -191,10 +190,56 @@ function compare(arr1,arr2){
 
 }
 
+function getMasterFromLayer(layer){
+  var isSymbol = (layer.type == 'SymbolInstance');
+
+  if (isSymbol) {
+    var key = deviceKey;
+    var master = layer.master;
+  }
+  else {
+    var styleId = layer.sharedStyleId;
+    var master = document.getSharedTextStyleWithID(styleId);
+  }
+
+  return master;
+}
+
+function getReferencesFromMaster(master){
+  var isSymbol = (master.type == 'SymbolMaster');
+
+
+  var existingSymbolsArray = [];
+
+  var originLibrary = master.getLibrary();
+
+
+  //get all of the symbols from the library
+  var symbolReferences;
+  if(isSymbol) {
+    if(originLibrary) {
+      symbolReferences = originLibrary.getImportableSymbolReferencesForDocument(document);
+    }
+    else {
+      symbolReferences = document.getSymbols();
+    }
+  }
+  else {
+    if(originLibrary) {
+      symbolReferences = originLibrary.getImportableTextStyleReferencesForDocument(document);
+    }
+    else {
+      sketch.UI.message('doesn\'t have a library text style')
+    }
+  }
+
+
+  return symbolReferences;
+}
+
 
 export function onSelectionChanged() {
   if (isWebviewPresent(webviewIdentifier)) {
-    console.log("onSelectionChanged2")
     const doc = sketch.getSelectedDocument()
     selectedLayers = doc.selectedLayers;
     const selectedCount = selectedLayers.length;
@@ -210,9 +255,6 @@ export function onSelectionChanged() {
     else {
       dropdownArray = iterateLayers(selectedLayers);
 
-      console.log("dropdownArray");
-      console.log(dropdownArray)
-
       sendToWebview(webviewIdentifier, `loadDropdowns(${JSON.stringify(dropdownArray)})`)
     }
   }
@@ -220,7 +262,6 @@ export function onSelectionChanged() {
 
 export function showMessage(message) {
   if (isWebviewPresent(webviewIdentifier)) {
-    console.log('webview present')
     sendToWebview(webviewIdentifier, `sendMessage(${JSON.stringify(message)})`)
   }
 }
